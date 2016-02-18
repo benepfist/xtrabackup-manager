@@ -1,1 +1,0 @@
-ALTER TABLE queue_tickets CHANGE entry_time entry_timestamp BIGINT UNSIGNED NOT NULL
