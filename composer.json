@@ -1,0 +1,32 @@
+{
+    "name": "benepfist/xtrabackup-manager",
+    "description": "Manage Xtrabackup Backups",
+    "keywords": ["percona", "xtabackup", "manager"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Benedict Pfisterer",
+            "email": "pfisterer.bene@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/console": "~2.3|~3.0",
+        "symfony/process": "~2.3|~3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Benepfist\\Xtrabackup\\Manager\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Testing\\": "tests/"
+        }
+    },
+    "bin": [
+        "xbm"
+    ]
+}
