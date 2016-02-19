@@ -12,7 +12,7 @@ class BackupCommandTest extends CommandTest
      */
     public function setUp()
     {
-        parent::setUp(BackupCommand::class, 'backup:full');
+        parent::setUp(BackupCommand::class, 'backup');
     }
 
     /**
@@ -23,16 +23,16 @@ class BackupCommandTest extends CommandTest
      */
     public function executeFullBackupWithoutCredentials()
     {
-        $backup_dir = '/var/backups/';
-        $this->executeCommand(['backup-dir' => '/var/backups/'], 'Backup finished!');
+        $backup_dir = '/var/backups';
+        $this->executeCommand(['backup-dir' => $backup_dir], 'Backup finished!');
 
         $backup_dir = preg_quote($backup_dir, "/");
         $this->assertCommandDisplays([
             "Backup database",
-            "innobackupex $backup_dir\d{4}_\d{2}_\d{2}_\d{6}\/  --no-timestamp",
+            "innobackupex $backup_dir\/\d{4}_\d{2}_\d{2}_\d{6}\/  --no-timestamp",
             "Copy backup for quick restore",
             "Prepare backup for restore",
-            "innobackupex --apply-log $backup_dir"."restore\/current",
+            "innobackupex --apply-log $backup_dir\/restore\/current",
         ]);
     }
 
@@ -44,7 +44,7 @@ class BackupCommandTest extends CommandTest
      */
     public function executeFullBackupWithCredentials()
     {
-        $backup_dir = '/var/backups/';
+        $backup_dir = '/var/backups';
         $user = 'homestead';
         $password = 'secret';
 
@@ -53,10 +53,10 @@ class BackupCommandTest extends CommandTest
         $backup_dir = preg_quote($backup_dir, "/");
         $this->assertCommandDisplays([
             "Backup database",
-            "innobackupex $backup_dir\d{4}_\d{2}_\d{2}_\d{6}\/ --user=$user --password=$password --no-timestamp",
+            "innobackupex $backup_dir\/\d{4}_\d{2}_\d{2}_\d{6}\/ --user=$user --password=$password --no-timestamp",
             "Copy backup for quick restore",
             "Prepare backup for restore",
-            "innobackupex --apply-log $backup_dir"."restore\/current",
+            "innobackupex --apply-log $backup_dir\/restore\/current",
         ]);
     }
 }

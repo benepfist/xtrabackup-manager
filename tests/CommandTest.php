@@ -71,7 +71,7 @@ abstract class CommandTest extends \PHPUnit_Framework_TestCase
     {
         $this->commandTester->execute(array_merge(['command' => $this->command->getname(), '--debug' => true], $parameters));
 
-        //echo "\n".$this->commandTester->getDisplay(true);
+        echo "\n".$this->commandTester->getDisplay(true);
         $this->assertCommandDisplays($output);
     }
 

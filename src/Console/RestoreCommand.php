@@ -37,15 +37,16 @@ class RestoreCommand extends BaseCommand
      */
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $restore_dir = $input->getOption('restore-dir');
+        $backup = date('Y_m_d_His');
+        $restore_dir = ($restore = $input->getOption('restore-dir')) ? $restore : $this->getRestoreDirectory();
 
         // Step 1) Backup datadir
         $output->writeln("<info>Backup datadir ...</info>");
-        $this->runProcess(new Process("sudo mkdir -p /tmp/xbm/backup/ && sudo mv /var/lib/mysql/ /tmp/xbm/backup/"), $input, $output);
+        $this->runProcess(new Process("mkdir -p /tmp/xbm/backup/ && mv /var/lib/mysql /tmp/xbm/backup/$backup"), $input, $output);
 
         // Step 2) Restore latest backup
         $output->writeln("<info>Restore backup ...</info>");
-        $this->runProcess(new Process("innobackupex --copy-back $restore_dir"."current/"), $input, $output);
+        $this->runProcess(new Process("innobackupex --copy-back {$restore_dir}/current"), $input, $output);
 
         // Step 3) Modify datadir permission
         $output->writeln("<info>Modify Permission ...</info>");

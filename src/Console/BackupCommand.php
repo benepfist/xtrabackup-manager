@@ -48,20 +48,21 @@ class BackupCommand extends BaseCommand
 
         // Step 1) Backup Database
         $output->writeln("<info>Backup database ...</info>");
-        $this->runProcess(new Process("innobackupex {$backup_dir}{$backup}/ {$param} --no-timestamp"), $input, $output);
+        $this->runProcess(new Process("innobackupex {$backup_dir}/{$backup}/ {$param} --no-timestamp"), $input, $output);
 
         // Step 2) Copy last backup to restore directory and symling it to current folder
         $output->writeln("<info>Copy backup for quick restore ...</info>");
         $commands = [
-            "cp {$backup_dir}{$backup}/ $restore_dir/releases/{$backup}/",
-            "ln -nfs {$restore_dir}releases/{$backup}/ {$restore_dir}current/"
+            "[ -d $restore_dir/releases ] || mkdir -p $restore_dir/releases",
+            "cp -R {$backup_dir}/{$backup} $restore_dir/releases",
+            "ln -nfs {$restore_dir}/releases/{$backup}/ {$restore_dir}/current"
         ];
 
         $this->runProcess(new Process(implode(' && ', $commands)), $input, $output);
 
         // Step 3) Prepare Command for restore
         $output->writeln("<info>Prepare backup for restore ...</info>");
-        $this->runProcess(new Process("innobackupex --apply-log {$restore_dir}current"), $input, $output);
+        $this->runProcess(new Process("innobackupex --apply-log {$restore_dir}/current"), $input, $output);
 
         $output->writeln("<info>Backup finished!</info>");
     }

@@ -59,7 +59,7 @@ class BaseCommand extends Command
                     if (Process::ERR === $type) {
                         $output->writeln("<error>{$line}</error>");
                     } else {
-                        $output->writeln("<error>{$line}</error>");
+                        $output->writeln("<info>{$line}</info>");
                     }
                 });
             } catch (ProcessFailedException $e) {
@@ -93,19 +93,6 @@ class BaseCommand extends Command
      */
     protected function getRestoreDirectory()
     {
-        return "/var/backups/restore/";
-    }
-
-    /**
-     * Cap a string with a single instance of a given value.
-     *
-     * @param  string  $value
-     * @param  string  $cap
-     * @return string
-     */
-    public static function finish($value, $cap)
-    {
-        $quoted = preg_quote($cap, '/');
-        return preg_replace('/(?:'.$quoted.')+$/', '', $value).$cap;
+        return "/var/backups/restore";
     }
 }
