@@ -10,7 +10,7 @@ use Symfony\Component\Console\Application;
 
 require __DIR__.'/vendor/autoload.php';
 
-$app = new Application('Xtrabackup Manager', '0.0.1');
+$app = new Application('Xtrabackup Manager', '0.1.0');
 // Register all commands
 $app->add(new BackupCommand());
 $app->add(new RestoreCommand());
