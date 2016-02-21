@@ -15,6 +15,20 @@ use Symfony\Component\Process\ProcessBuilder;
 class BaseCommand extends Command
 {
     /**
+     * The input interface implementation
+     *
+     * @var InputInterface
+     */
+    protected $input;
+
+    /**
+     * The output interface implementation
+     *
+     * @var OutputInterface
+     */
+    protected $output;
+
+    /**
      * init command
      *
      * @param Process $process
@@ -32,38 +46,56 @@ class BaseCommand extends Command
      */
     protected function configure()
     {
-        $this->addOption('debug', false, InputOption::VALUE_NONE, 'debug command (only for testing)');
+        $this->addOption('restore-dir', null, InputOption::VALUE_REQUIRED, 'Restore directory', '/var/backups/restore')
+            ->addOption('debug', null, InputOption::VALUE_NONE, 'debug command (only for testing)');
+    }
+
+    /**
+     * Run the console command
+     *
+     * @param  InputInterface  $input
+     * @param  OutputInterface $output
+     *
+     * @return int
+     */
+    public function run(InputInterface $input, OutputInterface $output)
+    {
+        $this->input = $input;
+
+        $this->output = $output;
+
+        return parent::run($input, $output);
     }
 
     /**
      * run process
      *
-     * @param  Process $process
-     * @param  InputInterface $input
-     * @param  OutputInterface $output
+     * @param  string $command
      * @param  string $errorMessage
      *
      * @return boolean
      */
-    public function runProcess($process, InputInterface $input, OutputInterface $output, $errorMessage = "")
+    public function runProcess($command, $errorMessage = "")
     {
-        if ($input->getOption('debug')) {
-            $command = $process->getCommandLine();
-            $output->writeln("<info>... {$command} ...</info>");
+        $process = new Process($command);
+
+        if ($this->option('debug')) {
+            $commandoutput = $process->getCommandLine();
+            $this->info("... {$commandoutput} ...");
         } else {
 
             $this->testIfInnobackupexInstalled();
 
             try {
-                $process->mustRun(function ($type, $line) use ($output) {
+                $process->mustRun(function ($type, $line) {
                     if (Process::ERR === $type) {
-                        $output->writeln("<error>{$line}</error>");
+                        $this->error($line);
                     } else {
-                        $output->writeln("<info>{$line}</info>");
+                        $this->info($line);
                     }
                 });
             } catch (ProcessFailedException $e) {
-                $output->writeln("<error>{$errorMessage}</error>");
+                $this->error($errorMessage);
                 return 1;
             }
         }
@@ -87,12 +119,128 @@ class BaseCommand extends Command
     }
 
     /**
-     * get restore directory
+     * take a full backup
      *
-     * @return string
+     * @param  string          $backup
+     * @param  InputInterface  $input
+     * @param  OutputInterface $output
+     *
+     * @return void
      */
-    protected function getRestoreDirectory()
+    public function takeFullBackup($backup)
     {
-        return "/var/backups/restore";
+        $param = implode(' ', (new ParameterParser)->getParameters($this->input));
+
+        $this->info("Backup database ...");
+        $this->runProcess("innobackupex {$backup}/ {$param} --no-timestamp");
+    }
+
+    /**
+     * prepare backup for restore
+     *
+     * @param  string $restore_path
+     *
+     * @return void
+     */
+    protected function prepareForRestore($restore_path)
+    {
+        // Prepare Command for restore
+        $this->info("Prepare backup for restore ...");
+        $this->runProcess("innobackupex --apply-log {$restore_path}");
+    }
+
+    /**
+     * copy backup
+     *
+     * @param  string          $source
+     * @param  string          $target
+     *
+     * @return void
+     */
+    protected function copyBackup($source, $target)
+    {
+        $commands = [
+            "[ -d {$target} ] || mkdir -p {$target}",
+            "cp -R {$source} {$target}"
+        ];
+
+        $this->runProcess(implode(' && ', $commands));
+    }
+
+    /**
+     * link source to target
+     *
+     * @param  string          $source
+     * @param  string          $target
+     *
+     * @return void
+     */
+    protected function linkDirectory($source, $target)
+    {
+        $this->runProcess("ln -nfs {$source} {$target}");
+    }
+
+   /**
+     * Write a string as information output.
+     *
+     * @param  string  $string
+     * @return void
+     */
+    public function info($string)
+    {
+        $this->line($string, 'info');
+    }
+    /**
+     * Write a string as standard output.
+     *
+     * @param  string  $string
+     * @param  string  $style
+     * @return void
+     */
+    public function line($string, $style = null)
+    {
+        $styled = $style ? "<$style>$string</$style>" : $string;
+        $this->output->writeln($styled);
+    }
+
+
+    /**
+     * Write a string as error output.
+     *
+     * @param  string  $string
+     * @param  null|int|string  $verbosity
+     * @return void
+     */
+    public function error($string)
+    {
+        $this->line($string, 'error');
+    }
+
+    /**
+     * Get the value of a command argument.
+     *
+     * @param  string  $key
+     * @return string|array
+     */
+    public function argument($key = null)
+    {
+        if (is_null($key)) {
+            return $this->input->getArguments();
+        }
+        return $this->input->getArgument($key);
+    }
+
+    /**
+     * Get the value of a command option.
+     *
+     * @param  string  $key
+     * @return string|array
+     */
+    public function option($key = null)
+    {
+        if (is_null($key)) {
+            return $this->input->getOptions();
+        }
+        return $this->input->getOption($key);
     }
 }

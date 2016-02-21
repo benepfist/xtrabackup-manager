@@ -34,7 +34,12 @@ abstract class CommandTest extends \PHPUnit_Framework_TestCase
         parent::setUp();
 
         $application = new Application;
-        $application->add(new $command());
+
+        if (is_string($command)) {
+            $application->add(new $command());
+        } else {
+            $application->add($command);
+        }
 
         $this->command = $application->find($commandName);
         $this->commandTester = new CommandTester($this->command);
@@ -55,7 +60,25 @@ abstract class CommandTest extends \PHPUnit_Framework_TestCase
                 $this->assertCommandDisplays($regexp);
             }
         } else {
-            $this->assertRegExp("/$regexpressions/", $this->commandTester->getDisplay(true));
+            $this->assertRegExp("/$regexpressions/", $this->commandTester->getDisplay(true), "Console Output expected.");
+        }
+    }
+
+    /**
+     *  test helper: assert Command Output does not contain
+     *
+     * @param   string $regexpressions
+     *
+     * @return  void
+     */
+    public function assertCommandDoesNotDisplays($regexpressions)
+    {
+        if (is_array($regexpressions)) {
+            foreach ($regexpressions as $regexp) {
+                $this->assertCommandDisplays($regexp);
+            }
+        } else {
+            $this->assertNotRegExp("/$regexpressions/", $this->commandTester->getDisplay(true), "Console Output was not expected.");
         }
     }
     

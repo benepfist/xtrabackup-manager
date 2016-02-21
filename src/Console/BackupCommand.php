@@ -7,7 +7,6 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Process\Process;
 
 class BackupCommand extends BaseCommand
 {
@@ -27,7 +26,7 @@ class BackupCommand extends BaseCommand
              ->addOption('password', null, InputOption::VALUE_OPTIONAL, 'The database password.')
              ->addOption('host', null, InputOption::VALUE_OPTIONAL, 'Remote host')
              ->addOption('port', null, InputOption::VALUE_OPTIONAL, 'The database port')
-             ->addOption('rsync', false, InputOption::VALUE_NONE, 'Use rsync utiltiy to optimize local file transfer');
+             ->addOption('rsync', null, InputOption::VALUE_NONE, 'Use rsync utiltiy to optimize local file transfer');
     }
 
     /**
@@ -41,29 +40,26 @@ class BackupCommand extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $backup = date('Y_m_d_His');
-        $backup_dir = $input->getArgument('backup-dir');
-        $restore_dir = $this->getRestoreDirectory();
-
-        $param = implode(' ', (new ParameterParser)->getParameters($input));
+        $backup_dir = $this->argument('backup-dir');
+        $restore_dir = $this->option('restore-dir');
+        $backup_path = "{$backup_dir}/{$backup}";
+        $releases_dir = "$restore_dir/releases";
+        $restore_path = "{$restore_dir}/current";
 
         // Step 1) Backup Database
-        $output->writeln("<info>Backup database ...</info>");
-        $this->runProcess(new Process("innobackupex {$backup_dir}/{$backup}/ {$param} --no-timestamp"), $input, $output);
+        $this->takeFullBackup($backup_path);
 
         // Step 2) Copy last backup to restore directory and symling it to current folder
-        $output->writeln("<info>Copy backup for quick restore ...</info>");
-        $commands = [
-            "[ -d $restore_dir/releases ] || mkdir -p $restore_dir/releases",
-            "cp -R {$backup_dir}/{$backup} $restore_dir/releases",
-            "ln -nfs {$restore_dir}/releases/{$backup}/ {$restore_dir}/current"
-        ];
+        $this->info("Copy backup for quick restore ...");
+        $this->copyBackup($backup_path, $releases_dir);
 
-        $this->runProcess(new Process(implode(' && ', $commands)), $input, $output);
+        // Step 3) Symling restore_directory to current folder
+        $this->info("Link backup to restore");
+        $this->linkDirectory("{$releases_dir}/{$backup}/", "{$restore_path}/");
 
-        // Step 3) Prepare Command for restore
-        $output->writeln("<info>Prepare backup for restore ...</info>");
-        $this->runProcess(new Process("innobackupex --apply-log {$restore_dir}/current"), $input, $output);
+        // Step 4) Prepare Backup for restore
+        $this->prepareForRestore($restore_path);
 
-        $output->writeln("<info>Backup finished!</info>");
+        $this->info("Backup finished!");
     }
 }
