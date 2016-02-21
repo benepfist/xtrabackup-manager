@@ -1,9 +1,11 @@
 #!/usr/bin/env php
 <?php 
 
+use Benepfist\Xtrabackup\Manager\Console\IncrementalCommand;
 use Benepfist\Xtrabackup\Manager\Console\BackupCommand;
-use Benepfist\Xtrabackup\Manager\Console\RestoreCommand;
 use Benepfist\Xtrabackup\Manager\Console\ConfigureCommand;
+use Benepfist\Xtrabackup\Manager\Console\RestoreCommand;
+use Benepfist\Xtrabackup\Manager\Utils\FileHelper;
 use Symfony\Component\Console\Application;
 
 require __DIR__.'/vendor/autoload.php';
@@ -12,6 +14,7 @@ $app = new Application('Xtrabackup Manager', '0.0.1');
 // Register all commands
 $app->add(new BackupCommand());
 $app->add(new RestoreCommand());
+$app->add(new IncrementalCommand(null, new FileHelper));
 //$app->add(new ConfigureCommand());
 
 $app->run();
